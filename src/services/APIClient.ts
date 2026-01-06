@@ -1,0 +1,122 @@
+import { Game } from "../types";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/games";
+
+class APIClient {
+    private async _fetchWithFallback(url: string, options: RequestInit = {}): Promise<Response> {
+        const protocols = ["http://localhost:8080", "http://127.0.0.1:8080"];
+        const path = url.split(":8080")[1] || "/api/games";
+
+        let lastError: any;
+        let lastResponse: Response | null = null;
+
+        for (const protocol of protocols) {
+            try {
+                const fullUrl = `${protocol}${path}`;
+
+                const response = await fetch(fullUrl, {
+                    ...options,
+                    mode: 'cors',
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...options.headers,
+                    },
+                });
+
+                // Return first successful response OR first client error (4xx)
+                if (response.ok) {
+                    return response;
+                }
+
+                // Store first response for later use
+                if (!lastResponse) {
+                    lastResponse = response;
+                }
+
+                // If it's a client error (4xx), return it immediately (don't retry)
+                if (response.status >= 400 && response.status < 500) {
+                    console.warn(`⚠️ Client error ${response.status}, returning response`);
+                    return response;
+                }
+
+            } catch (err) {
+                console.error(`❌ Network error for ${protocol}${path}:`, err);
+                lastError = err;
+            }
+        }
+
+        // If we got a response (even error), return it
+        if (lastResponse) {
+            console.warn(`⚠️ Returning last response with status ${lastResponse.status}`);
+            return lastResponse;
+        }
+
+        // Otherwise throw the network error
+        console.error(`❌ All attempts failed. Last error:`, lastError);
+        throw lastError || new Error("Failed to reach backend on any address");
+    }
+
+    async getAllGames(): Promise<Game[]> {
+        const response = await this._fetchWithFallback(BASE_URL);
+        if (!response.ok) throw new Error("Failed to fetch games");
+        return response.json();
+    }
+
+    async getGameById(id: number): Promise<Game> {
+        const response = await this._fetchWithFallback(`${BASE_URL}/${id}`);
+        if (!response.ok) throw new Error("Failed to fetch game details");
+        return response.json();
+    }
+
+    async searchGames(query: string): Promise<Game[]> {
+        const response = await this._fetchWithFallback(`${BASE_URL}/search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error("Search failed");
+        return response.json();
+    }
+
+    async addGame(game: Omit<Game, 'id'>): Promise<Game> {
+        const response = await this._fetchWithFallback(BASE_URL, {
+            method: "POST",
+            body: JSON.stringify(game),
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Add game failed:`, errorText);
+            throw new Error(errorText || "Failed to add game");
+        }
+        return response.json();
+    }
+
+    async updateGame(game: Game): Promise<Game> {
+        const response = await this._fetchWithFallback(`${BASE_URL}/${game.id}`, {
+            method: "PUT",
+            body: JSON.stringify(game),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Update game failed:`, errorText);
+            throw new Error(errorText || "Failed to update game");
+        }
+
+        const updatedGame = await response.json();
+        return updatedGame;
+    }
+
+    async deleteGame(id: number): Promise<void> {
+        const response = await this._fetchWithFallback(`${BASE_URL}/${id}`, {
+            method: "DELETE",
+        });
+        if (!response.ok) throw new Error("Failed to delete game");
+    }
+
+    async reorderGames(gameIds: number[]): Promise<void> {
+        const response = await this._fetchWithFallback(`${BASE_URL}/save-order`, {
+            method: "POST",
+            body: JSON.stringify(gameIds),
+        });
+        if (!response.ok) throw new Error("Failed to save game order");
+    }
+}
+
+export default new APIClient();

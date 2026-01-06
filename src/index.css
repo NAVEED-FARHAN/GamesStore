@@ -1,0 +1,83 @@
+@font-face {
+    font-family: 'Minecraftia';
+    src: url('./assets/fonts/Minecraftia-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Nestborn';
+    src: url('./assets/fonts/NestbornRegular-e9Orx.otf') format('opentype');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DotWalkthru';
+    src: url('./assets/fonts/DotWalkthru-AyyM.ttf') format('truetype');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pcagitha';
+    src: url('./assets/fonts/Pcagithademo-Wy1vn.otf') format('opentype');
+    font-display: swap;
+}
+
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    place-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+#root {
+    width: 100%;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+/* Modern Sleek Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(200, 200, 200, 0.5);
+    /* Lighter and more visible */
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(8, 203, 0, 0.8);
+    /* Brighter Green Hover */
+    background-clip: content-box;
+}
+
+/* For Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 100, 100, 0.2) transparent;
+}
