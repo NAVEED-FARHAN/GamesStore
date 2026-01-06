@@ -1,6 +1,10 @@
 import { Game } from "../types";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/games";
+// Use production backend URL when deployed, localhost for development
+const BASE_URL = import.meta.env.VITE_API_URL ||
+    (window.location.hostname.includes('render.com') || window.location.hostname.includes('github.io')
+        ? 'https://xybagg-backend.onrender.com/api/games'  // Replace with YOUR backend URL
+        : 'http://localhost:8080/api/games');
 
 class APIClient {
     private async _fetchWithFallback(url: string, options: RequestInit = {}): Promise<Response> {
