@@ -8,6 +8,23 @@ const BASE_URL = import.meta.env.VITE_API_URL ||
 
 class APIClient {
     private async _fetchWithFallback(url: string, options: RequestInit = {}): Promise<Response> {
+        // In production, just use the URL directly
+        // In development, try both localhost and 127.0.0.1
+        const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        if (!isLocalDev) {
+            // Production: use the URL as-is
+            return fetch(url, {
+                ...options,
+                mode: 'cors',
+                headers: {
+                    "Content-Type": "application/json",
+                    ...options.headers,
+                },
+            });
+        }
+
+        // Development: try localhost fallbacks
         const protocols = ["http://localhost:8080", "http://127.0.0.1:8080"];
         const path = url.split(":8080")[1] || "/api/games";
 
@@ -27,17 +44,14 @@ class APIClient {
                     },
                 });
 
-                // Return first successful response OR first client error (4xx)
                 if (response.ok) {
                     return response;
                 }
 
-                // Store first response for later use
                 if (!lastResponse) {
                     lastResponse = response;
                 }
 
-                // If it's a client error (4xx), return it immediately (don't retry)
                 if (response.status >= 400 && response.status < 500) {
                     console.warn(`⚠️ Client error ${response.status}, returning response`);
                     return response;
@@ -49,13 +63,11 @@ class APIClient {
             }
         }
 
-        // If we got a response (even error), return it
         if (lastResponse) {
             console.warn(`⚠️ Returning last response with status ${lastResponse.status}`);
             return lastResponse;
         }
 
-        // Otherwise throw the network error
         console.error(`❌ All attempts failed. Last error:`, lastError);
         throw lastError || new Error("Failed to reach backend on any address");
     }
