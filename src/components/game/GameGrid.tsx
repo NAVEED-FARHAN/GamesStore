@@ -176,7 +176,7 @@ const GameGrid = ({ searchText, genre, onSelectGame, adminMode, refreshKey, onRe
                             }}
                         >
                             <BlurFade
-                                delay={0} // No delay during reordering for snappy feel
+                                delay={isModify ? 0 : (Math.abs(Math.sin(game.id)) * 0.4)} // Snappy burst random reveal
                                 inView
                                 layout // This is CRITICAL for smooth reflow
                                 layoutId={game.id.toString()}
