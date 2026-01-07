@@ -8,8 +8,8 @@ const PRODUCTION_URL = 'https://xyba-backend.onrender.com/api/games';
 
 const BASE_URL = isProduction ? PRODUCTION_URL : 'http://localhost:8080/api/games';
 
-console.log(`🚀 [API] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-console.log(`🔗 [API] Base URL: ${BASE_URL}`);
+console.log(`[API] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`[API] Base URL: ${BASE_URL}`);
 
 class APIClient {
     private async _fetchWithFallback(url: string, options: RequestInit = {}): Promise<Response> {
@@ -81,7 +81,7 @@ class APIClient {
         });
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`❌ Add game failed:`, errorText);
+            console.error(`[API] Add game failed:`, errorText);
             throw new Error(errorText || "Failed to add game");
         }
         return response.json();
@@ -95,7 +95,7 @@ class APIClient {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`❌ Update game failed:`, errorText);
+            console.error(`[API] Update game failed:`, errorText);
             throw new Error(errorText || "Failed to update game");
         }
 
