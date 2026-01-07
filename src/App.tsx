@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, useColorMode } from "@chakra-ui/react";
+import { Box, useColorMode, useToast } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
@@ -121,6 +121,8 @@ function App() {
     bottomColor: "#ffffff"
   };
 
+  const toast = useToast();
+
   return (
     <Box position="relative" minHeight="100vh">
       {/* Background */}
@@ -177,15 +179,46 @@ function App() {
                   if (normalizedVal === "cheats activate" || normalizedVal === "cheat activate") {
                     setAdminMode('add');
                     setSearchText("");
+                    toast({
+                      title: "Admin Mode Activated",
+                      description: "Opening 'Add Game' form...",
+                      status: "success",
+                      duration: 3000,
+                      isClosable: true,
+                      position: "top",
+                    });
                   } else if (normalizedVal === "cheats modify" || normalizedVal === "cheat modify") {
                     setAdminMode('modify');
                     setSearchText("");
+                    toast({
+                      title: "Modify Mode Activated",
+                      description: "Click any game to edit it.",
+                      status: "info",
+                      duration: 3000,
+                      isClosable: true,
+                      position: "top",
+                    });
                   } else if (normalizedVal === "cheats deactivate" || normalizedVal === "cheat deactivate") {
                     setAdminMode('delete');
                     setSearchText("");
+                    toast({
+                      title: "Delete Mode Activated",
+                      description: "Click 'X' on games to remove them.",
+                      status: "warning",
+                      duration: 3000,
+                      isClosable: true,
+                      position: "top",
+                    });
                   } else if (normalizedVal === "cheats cancel" || normalizedVal === "cheat cancel") {
                     setAdminMode('none');
                     setSearchText("");
+                    toast({
+                      title: "Modes Canceled",
+                      status: "info",
+                      duration: 2000,
+                      isClosable: true,
+                      position: "top",
+                    });
                   } else {
                     setSearchText(val);
                   }

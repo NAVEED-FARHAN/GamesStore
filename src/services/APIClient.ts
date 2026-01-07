@@ -1,10 +1,15 @@
 import { Game } from "../types";
 
-// Use production backend URL when deployed, localhost for development
-const BASE_URL = import.meta.env.VITE_API_URL ||
-    (window.location.hostname.includes('render.com') || window.location.hostname.includes('github.io')
-        ? 'https://xybagg-backend.onrender.com/api/games'  // Replace with YOUR backend URL
-        : 'http://localhost:8080/api/games');
+const isProduction = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+
+// IMPORTANT: Check your Render dashboard for the exact URL. 
+// Based on logs, it might be xyba-backend or xybagg-backend.
+const PRODUCTION_URL = 'https://xyba-backend.onrender.com/api/games';
+
+const BASE_URL = isProduction ? PRODUCTION_URL : 'http://localhost:8080/api/games';
+
+console.log(`🚀 [API] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`🔗 [API] Base URL: ${BASE_URL}`);
 
 class APIClient {
     private async _fetchWithFallback(url: string, options: RequestInit = {}): Promise<Response> {
@@ -24,17 +29,14 @@ class APIClient {
             });
         }
 
-        // Development: try localhost fallbacks
+        // In Development: Try localhost and 127.0.0.1
         const protocols = ["http://localhost:8080", "http://127.0.0.1:8080"];
         const path = url.split(":8080")[1] || "/api/games";
 
         let lastError: any;
-        let lastResponse: Response | null = null;
-
         for (const protocol of protocols) {
             try {
                 const fullUrl = `${protocol}${path}`;
-
                 const response = await fetch(fullUrl, {
                     ...options,
                     mode: 'cors',
@@ -44,32 +46,14 @@ class APIClient {
                     },
                 });
 
-                if (response.ok) {
+                if (response.ok || (response.status >= 400 && response.status < 500)) {
                     return response;
                 }
-
-                if (!lastResponse) {
-                    lastResponse = response;
-                }
-
-                if (response.status >= 400 && response.status < 500) {
-                    console.warn(`⚠️ Client error ${response.status}, returning response`);
-                    return response;
-                }
-
             } catch (err) {
-                console.error(`❌ Network error for ${protocol}${path}:`, err);
                 lastError = err;
             }
         }
-
-        if (lastResponse) {
-            console.warn(`⚠️ Returning last response with status ${lastResponse.status}`);
-            return lastResponse;
-        }
-
-        console.error(`❌ All attempts failed. Last error:`, lastError);
-        throw lastError || new Error("Failed to reach backend on any address");
+        throw lastError || new Error("Backend unreachable");
     }
 
     async getAllGames(): Promise<Game[]> {
