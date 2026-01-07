@@ -13,7 +13,6 @@ interface EntryPageProps {
 const EntryPage = ({ onEnter }: EntryPageProps) => {
     const [progress, setProgress] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [statusText, setStatusText] = useState("INITIALIZING SYSTEM...");
 
     useEffect(() => {
         const assets = {
@@ -25,9 +24,8 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
         let loadedCount = 0;
         const totalAssets = assets.images.length + assets.audio.length + assets.fonts.length + 1; // +1 for API data
 
-        const updateProgress = (text: string) => {
+        const updateProgress = () => {
             loadedCount++;
-            setStatusText(text);
             const newProgress = Math.round((loadedCount / totalAssets) * 100);
             setProgress(newProgress);
             if (loadedCount >= totalAssets) {
@@ -37,37 +35,37 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
 
         // 1. Fetch Backend Data (Warm up)
         APIClient.getAllGames()
-            .then(() => updateProgress("DATABASE CONNECTED"))
-            .catch(() => updateProgress("DATABASE OFFLINE (RETRYING...)"));
+            .then(() => updateProgress())
+            .catch(() => updateProgress());
 
         // 2. Preload Images
         assets.images.forEach(src => {
             const img = new Image();
             img.src = src;
-            img.onload = () => updateProgress(`LOADED IMAGE: ${src.split('/').pop()}`);
-            img.onerror = () => updateProgress(`FAILED IMAGE: ${src.split('/').pop()}`);
+            img.onload = () => updateProgress();
+            img.onerror = () => updateProgress();
         });
 
         // 3. Preload Audio
         assets.audio.forEach(src => {
             const audio = new Audio();
             audio.src = src;
-            audio.oncanplaythrough = () => updateProgress(`LOADED AUDIO: ${src.split('/').pop()}`);
-            audio.onerror = () => updateProgress(`FAILED AUDIO: ${src.split('/').pop()}`);
+            audio.oncanplaythrough = () => updateProgress();
+            audio.onerror = () => updateProgress();
         });
 
         // 4. Check Fonts
         if ('fonts' in document) {
             Promise.all(assets.fonts.map(font => (document as any).fonts.load(`1em ${font}`)))
                 .then(() => {
-                    assets.fonts.forEach(font => updateProgress(`LOADED FONT: ${font}`));
+                    assets.fonts.forEach(() => updateProgress());
                 })
                 .catch(() => {
-                    assets.fonts.forEach(() => updateProgress("FONT LOAD ERROR"));
+                    assets.fonts.forEach(() => updateProgress());
                 });
         } else {
             // Fallback for browsers without FontFaceSet API
-            assets.fonts.forEach(font => updateProgress(`SKIPPING FONT: ${font}`));
+            assets.fonts.forEach(() => updateProgress());
         }
 
     }, []);
@@ -146,17 +144,6 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                             transition={{ duration: 0.4, ease: "easeOut" }}
                                         />
                                     </Box>
-                                    <Text
-                                        fontFamily="'Minecraftia', sans-serif"
-                                        fontSize="9px"
-                                        color="whiteAlpha.500"
-                                        letterSpacing="0.4em"
-                                        textTransform="uppercase"
-                                        maxW="250px"
-                                        noOfLines={1}
-                                    >
-                                        {statusText} ({progress}%)
-                                    </Text>
                                 </VStack>
                             </MotionBox>
                         ) : (

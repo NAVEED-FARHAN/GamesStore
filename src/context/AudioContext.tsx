@@ -17,7 +17,7 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isMuted, setIsMuted] = useState(() => {
         const saved = localStorage.getItem('audio_muted');
-        return saved === 'true';
+        return saved === 'true'; // Now defaults to false (unmuted) when no saved value
     });
 
     const bgmRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
@@ -37,6 +37,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         let audio = sfxRefs.current[path];
         if (!audio) {
             audio = new Audio(`/sounds/${path}`);
+            audio.preload = "auto";
             sfxRefs.current[path] = audio;
         }
         audio.currentTime = 0;
