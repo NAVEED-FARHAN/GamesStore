@@ -87,7 +87,7 @@ const HomePage = ({ onEnter }: HomePageProps) => {
                 <MotionButton
                     whileHover={{ scale: 1.05, boxShadow: "0 0 60px rgba(255, 255, 255, 0.4)" }}
                     whileTap={{ scale: 0.95 }}
-                    onMouseEnter={() => playSFX('button-hover.wav', 0.12)}
+                    onMouseEnter={() => playSFX('button-hover.wav', 0.05)}
                     onClick={handleEnter}
                     variant="unstyled"
                     display="flex"

@@ -57,7 +57,7 @@ function GameCard({ game, onClick, adminMode = 'none', onRefresh }: GameCardProp
             calculatePosition();
             setShowHoverCard(true);
         }, 1000); // Snappier delay (1s) as requested
-        playSFX('card-hover.mp3', 0.4);
+        playSFX('card-hover-new.wav', 0.2);
     };
 
     const handleMouseLeave = () => {
