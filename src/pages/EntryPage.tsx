@@ -1,6 +1,7 @@
 import { Box, Button, VStack, Heading, Text } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import APIClient from "../services/APIClient";
 
 const MotionBox = motion(Box);
 const MotionButton = motion(Button);
@@ -9,25 +10,66 @@ interface EntryPageProps {
     onEnter: () => void;
 }
 
-
 const EntryPage = ({ onEnter }: EntryPageProps) => {
     const [progress, setProgress] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [statusText, setStatusText] = useState("INITIALIZING SYSTEM...");
 
     useEffect(() => {
-        const timer = setInterval(() => {
-            setProgress((oldProgress) => {
-                if (oldProgress === 100) {
-                    clearInterval(timer);
-                    setTimeout(() => setIsLoaded(true), 600); // Wait for the glow to settle
-                    return 100;
-                }
-                const diff = Math.random() * 12;
-                return Math.min(oldProgress + diff, 100);
-            });
-        }, 180);
+        const assets = {
+            images: ['/xyba.png', '/logo.png', '/logo-light.png'],
+            audio: ['/sounds/typing.wav', '/sounds/main-page.ogg', '/sounds/button-hover.wav', '/sounds/card-hover-new.wav'],
+            fonts: ['Minecraftia', 'Nestborn', 'DotWalkthru', 'Pcagitha']
+        };
 
-        return () => clearInterval(timer);
+        let loadedCount = 0;
+        const totalAssets = assets.images.length + assets.audio.length + assets.fonts.length + 1; // +1 for API data
+
+        const updateProgress = (text: string) => {
+            loadedCount++;
+            setStatusText(text);
+            const newProgress = Math.round((loadedCount / totalAssets) * 100);
+            setProgress(newProgress);
+            if (loadedCount >= totalAssets) {
+                setTimeout(() => setIsLoaded(true), 800);
+            }
+        };
+
+        // 1. Fetch Backend Data (Warm up)
+        APIClient.getAllGames()
+            .then(() => updateProgress("DATABASE CONNECTED"))
+            .catch(() => updateProgress("DATABASE OFFLINE (RETRYING...)"));
+
+        // 2. Preload Images
+        assets.images.forEach(src => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => updateProgress(`LOADED IMAGE: ${src.split('/').pop()}`);
+            img.onerror = () => updateProgress(`FAILED IMAGE: ${src.split('/').pop()}`);
+        });
+
+        // 3. Preload Audio
+        assets.audio.forEach(src => {
+            const audio = new Audio();
+            audio.src = src;
+            audio.oncanplaythrough = () => updateProgress(`LOADED AUDIO: ${src.split('/').pop()}`);
+            audio.onerror = () => updateProgress(`FAILED AUDIO: ${src.split('/').pop()}`);
+        });
+
+        // 4. Check Fonts
+        if ('fonts' in document) {
+            Promise.all(assets.fonts.map(font => (document as any).fonts.load(`1em ${font}`)))
+                .then(() => {
+                    assets.fonts.forEach(font => updateProgress(`LOADED FONT: ${font}`));
+                })
+                .catch(() => {
+                    assets.fonts.forEach(() => updateProgress("FONT LOAD ERROR"));
+                });
+        } else {
+            // Fallback for browsers without FontFaceSet API
+            assets.fonts.forEach(font => updateProgress(`SKIPPING FONT: ${font}`));
+        }
+
     }, []);
 
     const handleEnter = () => {
@@ -106,12 +148,14 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                     </Box>
                                     <Text
                                         fontFamily="'Minecraftia', sans-serif"
-                                        fontSize="10px"
+                                        fontSize="9px"
                                         color="whiteAlpha.500"
                                         letterSpacing="0.4em"
                                         textTransform="uppercase"
+                                        maxW="250px"
+                                        noOfLines={1}
                                     >
-                                        INITIALIZING {Math.round(progress)}%
+                                        {statusText} ({progress}%)
                                     </Text>
                                 </VStack>
                             </MotionBox>
