@@ -13,6 +13,7 @@ import AdminAddGame from "./pages/AdminAddGame";
 import { Game } from "./types";
 import { useAudio } from "./context/AudioContext";
 import { useEffect } from "react";
+import CustomToast from "./components/ui/CustomToast";
 
 const MotionBox = motion(Box);
 
@@ -180,44 +181,60 @@ function App() {
                     setAdminMode('add');
                     setSearchText("");
                     toast({
-                      title: "Admin Mode Activated",
-                      description: "Opening 'Add Game' form...",
-                      status: "success",
-                      duration: 3000,
-                      isClosable: true,
-                      position: "top",
+                      position: "top-right",
+                      duration: 4000,
+                      render: ({ onClose }) => (
+                        <CustomToast
+                          title="Admin Mode Activated"
+                          description="Opening 'Add Game' form..."
+                          status="success"
+                          onClose={onClose}
+                        />
+                      ),
                     });
                   } else if (normalizedVal === "cheats modify" || normalizedVal === "cheat modify") {
                     setAdminMode('modify');
                     setSearchText("");
                     toast({
-                      title: "Modify Mode Activated",
-                      description: "Click any game to edit it.",
-                      status: "info",
-                      duration: 3000,
-                      isClosable: true,
-                      position: "top",
+                      position: "top-right",
+                      duration: 4000,
+                      render: ({ onClose }) => (
+                        <CustomToast
+                          title="Modify Mode Activated"
+                          description="Click any game to edit it."
+                          status="info"
+                          onClose={onClose}
+                        />
+                      ),
                     });
                   } else if (normalizedVal === "cheats deactivate" || normalizedVal === "cheat deactivate") {
                     setAdminMode('delete');
                     setSearchText("");
                     toast({
-                      title: "Delete Mode Activated",
-                      description: "Click 'X' on games to remove them.",
-                      status: "warning",
-                      duration: 3000,
-                      isClosable: true,
-                      position: "top",
+                      position: "top-right",
+                      duration: 4000,
+                      render: ({ onClose }) => (
+                        <CustomToast
+                          title="Delete Mode Activated"
+                          description="Click 'X' on games to remove them."
+                          status="warning"
+                          onClose={onClose}
+                        />
+                      ),
                     });
                   } else if (normalizedVal === "cheats cancel" || normalizedVal === "cheat cancel") {
                     setAdminMode('none');
                     setSearchText("");
                     toast({
-                      title: "Modes Canceled",
-                      status: "info",
-                      duration: 2000,
-                      isClosable: true,
-                      position: "top",
+                      position: "top-right",
+                      duration: 3000,
+                      render: ({ onClose }) => (
+                        <CustomToast
+                          title="Modes Canceled"
+                          status="info"
+                          onClose={onClose}
+                        />
+                      ),
                     });
                   } else {
                     setSearchText(val);
