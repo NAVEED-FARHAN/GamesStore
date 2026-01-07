@@ -28,6 +28,7 @@ import { motion } from "framer-motion";
 
 import { Game } from "../types";
 import APIClient from "../services/APIClient";
+import CustomToast from "../components/ui/CustomToast";
 
 interface AdminAddGameProps {
     onBack: () => void;
@@ -124,10 +125,16 @@ const AdminAddGame = ({ onBack, initialData }: AdminAddGameProps) => {
                 localStorage.setItem(`game_extra_${updatedGame.title}`, JSON.stringify(extraData));
 
                 toast({
-                    title: "Success",
-                    description: "Game updated successfully! Syncing to local cache.",
-                    status: "success",
-                    duration: 3000,
+                    position: "top-right",
+                    duration: 4000,
+                    render: ({ onClose }) => (
+                        <CustomToast
+                            title="Entry Updated"
+                            description="Success! Changes synced to library."
+                            status="success"
+                            onClose={onClose}
+                        />
+                    ),
                 });
             } else {
                 const newGame = await APIClient.addGame(payload as any);
@@ -141,20 +148,32 @@ const AdminAddGame = ({ onBack, initialData }: AdminAddGameProps) => {
                 localStorage.setItem(`game_extra_${newGame.title}`, JSON.stringify(extraData));
 
                 toast({
-                    title: "Success",
-                    description: "Game added successfully!",
-                    status: "success",
-                    duration: 3000,
+                    position: "top-right",
+                    duration: 4000,
+                    render: ({ onClose }) => (
+                        <CustomToast
+                            title="Entry Forged"
+                            description="Success! New game added to library."
+                            status="success"
+                            onClose={onClose}
+                        />
+                    ),
                 });
             }
             onBack();
         } catch (error: any) {
             console.error("CRITICAL SAVE ERROR:", error);
             toast({
-                title: "Error",
-                description: `Failed to save: ${error.message || "Invalid Data"}. Please ensure title is unique.`,
-                status: "error",
+                position: "top-right",
                 duration: 5000,
+                render: ({ onClose }) => (
+                    <CustomToast
+                        title="Forge Failed"
+                        description={error.message || "Invalid Data. Please ensure title is unique."}
+                        status="error"
+                        onClose={onClose}
+                    />
+                ),
             });
         } finally {
             setIsLoading(false);

@@ -5,6 +5,7 @@ import GameCard from "./GameCard";
 import APIClient from "../../services/APIClient";
 import { Game } from "../../types";
 import { BlurFade } from "../ui/BlurFade";
+import CustomToast from "../ui/CustomToast";
 
 interface Props {
     searchText: string;
@@ -86,21 +87,30 @@ const GameGrid = ({ searchText, genre, onSelectGame, adminMode, refreshKey, onRe
             await APIClient.reorderGames(gameIds);
             setIsOrderDirty(false);
             toast({
-                title: "Arrangement Saved",
-                description: "The library order has been updated successfully.",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-                position: "top"
+                position: "top-right",
+                duration: 4000,
+                render: ({ onClose }) => (
+                    <CustomToast
+                        title="Arrangement Saved"
+                        description="The library order has been updated successfully."
+                        status="success"
+                        onClose={onClose}
+                    />
+                ),
             });
             if (onRefresh) onRefresh();
         } catch (err) {
             toast({
-                title: "Save Failed",
-                description: "Could not persist the new arrangement. Please try again.",
-                status: "error",
+                position: "top-right",
                 duration: 5000,
-                isClosable: true,
+                render: ({ onClose }) => (
+                    <CustomToast
+                        title="Save Failed"
+                        description="Could not persist the new arrangement. Please try again."
+                        status="error"
+                        onClose={onClose}
+                    />
+                ),
             });
         } finally {
             setIsLoading(false);
