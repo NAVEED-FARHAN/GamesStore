@@ -10,6 +10,7 @@ interface AudioContextType {
     resumeBGM: (path: string) => void;
     fadeBGM: (path: string, targetVolume: number, duration?: number) => void;
     setIsTrailerPlaying: (isPlaying: boolean) => void;
+    unlockAudio: () => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -30,6 +31,35 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             audio.muted = isMuted;
         });
     }, [isMuted]);
+
+    const unlockAudio = useCallback(() => {
+        // Play a silent sound to unlock audio on mobile/desktop browsers
+        const silentAudio = new Audio();
+        silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+        silentAudio.play().catch(() => { });
+
+        // Pre-initialize important SFX
+        const criticalSFX = [
+            'button-hover.wav',
+            'button-click.mp3',
+            'card-hover-new.wav',
+            'typing.wav'
+        ];
+
+        criticalSFX.forEach(path => {
+            if (!sfxRefs.current[path]) {
+                const audio = new Audio(`/sounds/${path}`);
+                audio.preload = "auto";
+                audio.volume = 0;
+                sfxRefs.current[path] = audio;
+                // Just trigger a load/play with 0 volume to "warm" it
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(() => { });
+            }
+        });
+    }, []);
 
     const playSFX = useCallback((path: string, volume: number = 0.5) => {
         if (isMuted) return;
@@ -135,7 +165,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [pauseBGM, resumeBGM]);
 
     return (
-        <AudioContext.Provider value={{ isMuted, toggleMute, playSFX, startBGM, stopBGM, pauseBGM, resumeBGM, fadeBGM, setIsTrailerPlaying }}>
+        <AudioContext.Provider value={{ isMuted, toggleMute, playSFX, startBGM, stopBGM, pauseBGM, resumeBGM, fadeBGM, setIsTrailerPlaying, unlockAudio }}>
             {children}
         </AudioContext.Provider>
     );

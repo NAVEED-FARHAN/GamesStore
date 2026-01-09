@@ -1,7 +1,8 @@
-import { Box, Button, VStack, Heading, Text } from "@chakra-ui/react";
+import { Box, Button, VStack, Heading, Text, HStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import APIClient from "../services/APIClient";
+import { useAudio } from "../context/AudioContext";
 
 const MotionBox = motion(Box);
 const MotionButton = motion(Button);
@@ -13,6 +14,7 @@ interface EntryPageProps {
 const EntryPage = ({ onEnter }: EntryPageProps) => {
     const [progress, setProgress] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
+    const { unlockAudio } = useAudio();
 
     useEffect(() => {
         const assets = {
@@ -21,56 +23,51 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
             fonts: ['Minecraftia', 'Nestborn', 'DotWalkthru', 'Pcagitha']
         };
 
-        let loadedCount = 0;
-        const totalAssets = assets.images.length + assets.audio.length + assets.fonts.length + 1; // +1 for API data
+        const totalToLoad = assets.images.length + assets.audio.length + assets.fonts.length + 1; // +1 for API
+        let loaded = 0;
 
-        const updateProgress = () => {
-            loadedCount++;
-            const newProgress = Math.round((loadedCount / totalAssets) * 100);
-            setProgress(newProgress);
-            if (loadedCount >= totalAssets) {
-                setTimeout(() => setIsLoaded(true), 800);
+        const increment = () => {
+            loaded++;
+            const p = Math.floor((loaded / totalToLoad) * 100);
+            setProgress(p);
+            if (loaded >= totalToLoad) {
+                setTimeout(() => setIsLoaded(true), 600);
             }
         };
 
-        // 1. Fetch Backend Data (Warm up)
-        APIClient.getAllGames()
-            .then(() => updateProgress())
-            .catch(() => updateProgress());
+        // 1. Data
+        APIClient.getAllGames().finally(increment);
 
-        // 2. Preload Images
+        // 2. Images
         assets.images.forEach(src => {
             const img = new Image();
             img.src = src;
-            img.onload = () => updateProgress();
-            img.onerror = () => updateProgress();
+            img.onload = increment;
+            img.onerror = increment;
         });
 
-        // 3. Preload Audio
+        // 3. Audio (Warm up)
         assets.audio.forEach(src => {
-            const audio = new Audio();
-            audio.src = src;
-            audio.oncanplaythrough = () => updateProgress();
-            audio.onerror = () => updateProgress();
+            const a = new Audio();
+            a.src = src;
+            a.oncanplaythrough = increment;
+            a.onerror = increment;
         });
 
-        // 4. Check Fonts
+        // 4. Fonts
         if ('fonts' in document) {
-            Promise.all(assets.fonts.map(font => (document as any).fonts.load(`1em ${font}`)))
-                .then(() => {
-                    assets.fonts.forEach(() => updateProgress());
-                })
-                .catch(() => {
-                    assets.fonts.forEach(() => updateProgress());
+            Promise.all(assets.fonts.map(f => (document as any).fonts.load(`1em ${f}`)))
+                .finally(() => {
+                    assets.fonts.forEach(increment);
                 });
         } else {
-            // Fallback for browsers without FontFaceSet API
-            assets.fonts.forEach(() => updateProgress());
+            assets.fonts.forEach(increment);
         }
 
     }, []);
 
     const handleEnter = () => {
+        unlockAudio(); // Initialize audio context on first user gesture
         onEnter();
     };
 
@@ -91,14 +88,14 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
             bg="transparent"
             backdropFilter="blur(60px) saturate(150%)"
         >
-            <VStack spacing={10} textAlign="center" width="100%" maxW="500px">
+            <VStack spacing={10} textAlign="center" width="100%" maxW="600px" px={4}>
                 <MotionBox
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2, duration: 0.8 }}
                 >
                     <Heading
-                        fontSize="6xl"
+                        fontSize={{ base: "4xl", md: "6xl" }}
                         color="white"
                         textShadow="0 0 30px rgba(255,255,255,0.3)"
                         display="flex"
@@ -109,12 +106,12 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                         <span style={{ fontFamily: 'DotWalkthru' }}>.</span>
                         <span style={{ fontFamily: 'Pcagitha' }}>gg</span>
                     </Heading>
-                    <Text color="whiteAlpha.600" mt={2} letterSpacing="0.5em">
+                    <Text color="whiteAlpha.600" mt={2} letterSpacing="0.5em" fontSize={{ base: "xs", md: "sm" }}>
                         THE GAMES LIBRARY
                     </Text>
                 </MotionBox>
 
-                <Box width="300px" position="relative" minH="100px" display="flex" alignItems="center" justifyContent="center">
+                <Box width="350px" position="relative" minH="120px" display="flex" alignItems="center" justifyContent="center">
                     <AnimatePresence mode="wait">
                         {!isLoaded ? (
                             <MotionBox
@@ -125,25 +122,44 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                 transition={{ duration: 0.5 }}
                                 width="100%"
                             >
-                                <VStack spacing={4}>
-                                    <Box
-                                        width="100%"
-                                        height="4px"
-                                        bg="rgba(255, 255, 255, 0.05)"
-                                        borderRadius="full"
-                                        overflow="hidden"
-                                        border="1px solid rgba(255, 255, 255, 0.1)"
-                                        backdropFilter="blur(10px)"
-                                        position="relative"
+                                <VStack spacing={3}>
+                                    <HStack width="100%" spacing={4}>
+                                        <Box
+                                            flex={1}
+                                            height="2px"
+                                            bg="rgba(255, 255, 255, 0.05)"
+                                            borderRadius="full"
+                                            overflow="hidden"
+                                            border="1px solid rgba(255, 255, 255, 0.1)"
+                                            backdropFilter="blur(10px)"
+                                            position="relative"
+                                        >
+                                            <MotionBox
+                                                height="100%"
+                                                bg="white"
+                                                boxShadow="0 0 15px white, 0 0 30px white"
+                                                animate={{ width: `${progress}%` }}
+                                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                            />
+                                        </Box>
+                                        <Text
+                                            fontFamily="'Minecraftia', sans-serif"
+                                            fontSize="10px"
+                                            color="whiteAlpha.700"
+                                            width="40px"
+                                            textAlign="right"
+                                        >
+                                            {progress}%
+                                        </Text>
+                                    </HStack>
+                                    <Text
+                                        fontSize="9px"
+                                        color="whiteAlpha.400"
+                                        letterSpacing="0.3em"
+                                        textTransform="uppercase"
                                     >
-                                        <MotionBox
-                                            height="100%"
-                                            bg="white"
-                                            boxShadow="0 0 15px white, 0 0 30px white"
-                                            animate={{ width: `${progress}%` }}
-                                            transition={{ duration: 0.4, ease: "easeOut" }}
-                                        />
-                                    </Box>
+                                        Initializing Core Systems
+                                    </Text>
                                 </VStack>
                             </MotionBox>
                         ) : (
