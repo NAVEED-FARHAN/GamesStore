@@ -1,6 +1,6 @@
 import { Box, Button, VStack, Heading, Text, HStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import APIClient from "../services/APIClient";
 import { useAudio } from "../context/AudioContext";
 
@@ -15,6 +15,7 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
     const [progress, setProgress] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
     const { unlockAudio } = useAudio();
+    const loadedCountRef = useRef(0);
 
     useEffect(() => {
         const assets = {
@@ -24,14 +25,14 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
         };
 
         const totalToLoad = assets.images.length + assets.audio.length + assets.fonts.length + 1; // +1 for API
-        let loaded = 0;
+        loadedCountRef.current = 0;
 
         const increment = () => {
-            loaded++;
-            const p = Math.floor((loaded / totalToLoad) * 100);
-            setProgress(p);
-            if (loaded >= totalToLoad) {
-                setTimeout(() => setIsLoaded(true), 600);
+            loadedCountRef.current++;
+            const p = Math.floor((loadedCountRef.current / totalToLoad) * 100);
+            setProgress(Math.min(p, 100));
+            if (loadedCountRef.current >= totalToLoad) {
+                setTimeout(() => setIsLoaded(true), 800);
             }
         };
 
@@ -50,6 +51,7 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
         assets.audio.forEach(src => {
             const a = new Audio();
             a.src = src;
+            a.preload = "auto";
             a.oncanplaythrough = increment;
             a.onerror = increment;
         });
@@ -58,17 +60,25 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
         if ('fonts' in document) {
             Promise.all(assets.fonts.map(f => (document as any).fonts.load(`1em ${f}`)))
                 .finally(() => {
-                    assets.fonts.forEach(increment);
+                    // Fonts load together, but we count them individually for progress accuracy
+                    for (let i = 0; i < assets.fonts.length; i++) {
+                        increment();
+                    }
                 });
         } else {
-            assets.fonts.forEach(increment);
+            for (let i = 0; i < assets.fonts.length; i++) {
+                increment();
+            }
         }
 
     }, []);
 
     const handleEnter = () => {
-        unlockAudio(); // Initialize audio context on first user gesture
-        onEnter();
+        unlockAudio();
+        // Small delay to ensure browser acknowledges the audio gesture before page switch
+        setTimeout(() => {
+            onEnter();
+        }, 150);
     };
 
     return (
@@ -85,17 +95,17 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
             display="flex"
             alignItems="center"
             justifyContent="center"
-            bg="transparent"
+            bg="black" // Dark fallback
             backdropFilter="blur(60px) saturate(150%)"
         >
-            <VStack spacing={10} textAlign="center" width="100%" maxW="600px" px={4}>
+            <VStack spacing={12} textAlign="center" width="100%" maxW="600px" px={6}>
                 <MotionBox
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2, duration: 0.8 }}
                 >
                     <Heading
-                        fontSize={{ base: "4xl", md: "6xl" }}
+                        fontSize={{ base: "4xl", md: "7xl" }}
                         color="white"
                         textShadow="0 0 30px rgba(255,255,255,0.3)"
                         display="flex"
@@ -106,12 +116,12 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                         <span style={{ fontFamily: 'DotWalkthru' }}>.</span>
                         <span style={{ fontFamily: 'Pcagitha' }}>gg</span>
                     </Heading>
-                    <Text color="whiteAlpha.600" mt={2} letterSpacing="0.5em" fontSize={{ base: "xs", md: "sm" }}>
-                        THE GAMES LIBRARY
+                    <Text color="whiteAlpha.600" mt={4} letterSpacing="0.6em" fontSize={{ base: "xs", md: "sm" }} textTransform="uppercase">
+                        The Games Library
                     </Text>
                 </MotionBox>
 
-                <Box width="350px" position="relative" minH="120px" display="flex" alignItems="center" justifyContent="center">
+                <Box width="380px" position="relative" minH="120px" display="flex" alignItems="center" justifyContent="center">
                     <AnimatePresence mode="wait">
                         {!isLoaded ? (
                             <MotionBox
@@ -122,11 +132,11 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                 transition={{ duration: 0.5 }}
                                 width="100%"
                             >
-                                <VStack spacing={3}>
-                                    <HStack width="100%" spacing={4}>
+                                <VStack spacing={4}>
+                                    <HStack width="100%" spacing={6}>
                                         <Box
                                             flex={1}
-                                            height="2px"
+                                            height="4px" // Thicker bar
                                             bg="rgba(255, 255, 255, 0.05)"
                                             borderRadius="full"
                                             overflow="hidden"
@@ -137,17 +147,19 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                             <MotionBox
                                                 height="100%"
                                                 bg="white"
-                                                boxShadow="0 0 15px white, 0 0 30px white"
+                                                boxShadow="0 0 20px white, 0 0 40px white"
+                                                initial={{ width: "0%" }} // Explicit start
                                                 animate={{ width: `${progress}%` }}
-                                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                                transition={{ duration: 0.5, ease: "easeOut" }}
                                             />
                                         </Box>
                                         <Text
                                             fontFamily="'Minecraftia', sans-serif"
-                                            fontSize="10px"
-                                            color="whiteAlpha.700"
-                                            width="40px"
+                                            fontSize="12px"
+                                            color="whiteAlpha.800"
+                                            width="50px"
                                             textAlign="right"
+                                            fontWeight="bold"
                                         >
                                             {progress}%
                                         </Text>
@@ -155,10 +167,10 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                     <Text
                                         fontSize="9px"
                                         color="whiteAlpha.400"
-                                        letterSpacing="0.3em"
+                                        letterSpacing="0.4em"
                                         textTransform="uppercase"
                                     >
-                                        Initializing Core Systems
+                                        Establishing Core Linkage
                                     </Text>
                                 </VStack>
                             </MotionBox>
@@ -185,7 +197,7 @@ const EntryPage = ({ onEnter }: EntryPageProps) => {
                                 bg="rgba(255, 255, 255, 0.05)"
                                 color="white"
                                 fontSize="xl"
-                                letterSpacing="0.3em"
+                                letterSpacing="0.4em"
                                 fontWeight="light"
                             >
                                 ENTER

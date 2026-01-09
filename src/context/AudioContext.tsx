@@ -23,6 +23,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const bgmRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
     const sfxRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
+    const webAudioContext = useRef<AudioContext | null>(null);
 
     useEffect(() => {
         localStorage.setItem('audio_muted', isMuted.toString());
@@ -33,32 +34,41 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [isMuted]);
 
     const unlockAudio = useCallback(() => {
-        // Play a silent sound to unlock audio on mobile/desktop browsers
+        // 1. Initialize/Resume Web Audio Context (Modern standard)
+        if (!webAudioContext.current) {
+            webAudioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+
+        if (webAudioContext.current.state === 'suspended') {
+            webAudioContext.current.resume();
+        }
+
+        // 2. Play a short silent buffer (Force user-gesture capture)
         const silentAudio = new Audio();
         silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFRm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
-        silentAudio.play().catch(() => { });
+        silentAudio.play().then(() => {
+            // 3. Pre-warm critical SFX while the engine is open
+            const criticalSFX = [
+                'button-hover.wav',
+                'button-click.mp3',
+                'card-hover-new.wav',
+                'typing.wav'
+            ];
 
-        // Pre-initialize important SFX
-        const criticalSFX = [
-            'button-hover.wav',
-            'button-click.mp3',
-            'card-hover-new.wav',
-            'typing.wav'
-        ];
-
-        criticalSFX.forEach(path => {
-            if (!sfxRefs.current[path]) {
-                const audio = new Audio(`/sounds/${path}`);
-                audio.preload = "auto";
+            criticalSFX.forEach(path => {
+                let audio = sfxRefs.current[path];
+                if (!audio) {
+                    audio = new Audio(`/sounds/${path}`);
+                    audio.preload = "auto";
+                    sfxRefs.current[path] = audio;
+                }
                 audio.volume = 0;
-                sfxRefs.current[path] = audio;
-                // Just trigger a load/play with 0 volume to "warm" it
                 audio.play().then(() => {
                     audio.pause();
                     audio.currentTime = 0;
                 }).catch(() => { });
-            }
-        });
+            });
+        }).catch(() => { });
     }, []);
 
     const playSFX = useCallback((path: string, volume: number = 0.5) => {
